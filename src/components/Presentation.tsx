@@ -168,6 +168,24 @@ const Presentation = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showIntro, slide, goNext, goPrev]);
 
+  // Tap/click navigation for phones and tablets: left 25% = prev, rest = next (like Space / Arrow keys)
+  const handleScreenTap = useCallback(
+    (e: React.MouseEvent) => {
+      if (showIntro) return;
+      const target = e.target as HTMLElement;
+      if (target.closest('button, a, input, textarea, [role="button"], [data-no-nav]')) return;
+
+      const width = window.innerWidth;
+      const leftZone = width * 0.25;
+      if (e.clientX < leftZone) {
+        goPrev();
+      } else {
+        goNext();
+      }
+    },
+    [showIntro, goNext, goPrev]
+  );
+
   const handleIntroEnd = () => {
     setShowIntro(false);
     setShowCornerLogo(true);
@@ -176,7 +194,11 @@ const Presentation = () => {
   const progress = ((currentSlide + 1) / SLIDES.length) * 100;
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden" style={{ background: '#111017' }}>
+    <div
+      className="relative w-screen h-screen overflow-hidden cursor-pointer touch-manipulation"
+      style={{ background: '#111017' }}
+      onClick={handleScreenTap}
+    >
       <AnimatedBackground />
 
       {/* Intro Video */}
@@ -267,7 +289,7 @@ const Presentation = () => {
           className="absolute bottom-5 left-6 z-30"
         >
           <span className="text-[10px] tracking-[0.3em] uppercase" style={{ color: 'rgba(107,104,128,0.3)' }}>
-            Space / Arrow keys
+            Space / Arrows · Tap right = next, left = back
           </span>
         </motion.div>
       )}
