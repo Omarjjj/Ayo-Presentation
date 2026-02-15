@@ -1,0 +1,103 @@
+Actors and their roles : 
+
+
+Actors and Their Roles
+Here are the main actors in your system and what each one does (you can paste this into the document under “Actors and Their Roles”):
+
+1) End User
+Uses the assistant through voice, hotkeys, or the UI dashboard.
+
+Enables/disables features (camera, screen/context, proactivity).
+
+Controls privacy using:
+
+Privacy Mode hotkey (turns off camera + screen/context instantly)
+
+Camera toggle hotkey (camera only)
+
+Gives permission approvals when needed.
+
+2) Client UI (Electron + React)
+Displays the assistant interface (dashboard, chat/history, settings).
+
+Shows status indicators (mic/camera/privacy mode/server online).
+
+Sends user actions to the orchestrator (button clicks, toggles, hotkey events).
+
+Presents results (notifications, responses, errors).
+
+3) Client Orchestrator / Policy Layer (Node.js + Express inside Electron)
+The decision authority of the whole system.
+
+Decides when the assistant should:
+
+listen
+
+speak
+
+stay quiet
+
+call the LLM
+
+Enforces:
+
+permissions (mic/camera/screen)
+
+privacy mode rules
+
+cooldowns / do-not-disturb rules
+
+tool allowlist (what actions are permitted)
+
+Executes approved actions locally on the client.
+
+Handles fallback if the AI server is offline.
+
+4) Python Emotion Detection Engine (Local, Optional)
+Runs only if camera permission is enabled and privacy mode is OFF.
+
+Reads the camera locally and produces emotion signals (label/confidence/timestamp).
+
+Sends only lightweight results to the orchestrator (no raw video sharing).
+
+5) Remote LLM Inference Server (GTX 1650 Desktop)
+Receives requests from clients over HTTPS + authentication.
+
+Runs the language model to generate:
+
+response text
+
+suggested actions (from an allowed tool list)
+
+Does not access the user’s OS or execute tools.
+
+6) Operating System / System Tools (Client-Side)
+Performs the actual system actions only after approval by the orchestrator:
+
+opening apps
+
+notifications
+
+file/system utilities (if included)
+
+Returns success/failure + results back to the orchestrator.
+
+7) Local Storage (Client Device)
+Stores:
+
+settings and preferences
+
+hotkey configurations
+
+optional logs/history (if enabled)
+
+Supports “clear data” / retention rules.
+
+8) Authentication/Security Mechanism (Server Gatekeeper)
+Validates client access to the LLM server (API key / token).
+
+Can apply rate limiting to prevent abuse and overload.
+
+If you tell me whether your document wants this as (a) bullet list, (b) table, or (c) UML “Actor list” style, I’ll format it exactly like your template.
+
+

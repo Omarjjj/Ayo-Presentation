@@ -1,0 +1,267 @@
+ERD Description (Aligned with the Class Diagram)
+Your ERD should model what you store and query in the system (settings, hotkeys, logs, interactions), and it should align with your main client-side classes like SettingsManager, PrivacyManager, Orchestrator, EmotionSignalStore, ToolExecutor, Logger.
+
+Even if you start with local JSON files, you can still present it as an ERD (it represents the data model).
+
+Main Entities (Tables) and Why They Exist
+1) User
+Represents the user profile on a client device (even if you only support 1 user in the demo).
+
+user_id (PK)
+
+display_name (optional)
+
+created_at
+
+Relationships
+
+User 1 → many Settings
+
+User 1 → many Hotkeys
+
+User 1 → many InteractionSessions
+
+User 1 → many Logs (Errors/Events)
+
+2) Setting
+Stores user preferences (used by SettingsManager).
+
+setting_id (PK)
+
+user_id (FK → User)
+
+key (e.g., proactivityEnabled, cooldownSeconds, screenCaptureEnabled)
+
+value (string/json)
+
+updated_at
+
+Relationship
+
+User 1 → many Settings
+
+3) Hotkey
+Stores customizable hotkeys (used by HotkeyManager).
+
+hotkey_id (PK)
+
+user_id (FK → User)
+
+action (e.g., TOGGLE_PRIVACY_MODE, TOGGLE_CAMERA, PUSH_TO_TALK)
+
+key_combo (e.g., Ctrl+Shift+P)
+
+enabled (boolean)
+
+updated_at
+
+Relationship
+
+User 1 → many Hotkeys
+
+4) PermissionState
+Tracks permission status (used by PermissionManager + PrivacyManager).
+
+permission_id (PK)
+
+user_id (FK → User)
+
+permission_type (MIC, CAMERA, SCREEN)
+
+status (GRANTED, DENIED, UNKNOWN)
+
+last_checked_at
+
+Relationship
+
+User 1 → many PermissionState
+
+5) InteractionSession
+Represents one “assistant interaction session” (used by Orchestrator).
+A session can be user-initiated or proactive.
+
+session_id (PK)
+
+user_id (FK → User)
+
+trigger_type (USER_HOTKEY, UI_CLICK, PROACTIVE, etc.)
+
+started_at
+
+ended_at
+
+privacy_mode_at_start (boolean)
+
+result_status (SUCCESS, FAILED, CANCELED)
+
+Relationship
+
+User 1 → many InteractionSessions
+
+6) Message
+Stores conversation turns (used by UI history + logging).
+This is optional, depending on whether you keep chat history.
+
+message_id (PK)
+
+session_id (FK → InteractionSession)
+
+sender (USER or ASSISTANT)
+
+text
+
+created_at
+
+Relationship
+
+InteractionSession 1 → many Messages
+
+7) ContextSnapshot
+Stores the “minimal context summary” that was used for reasoning (aligned with ContextCollector).
+
+context_id (PK)
+
+session_id (FK → InteractionSession)
+
+active_app (string)
+
+idle_seconds (int)
+
+screen_summary (text, nullable, only if allowed)
+
+created_at
+
+Relationship
+
+InteractionSession 1 → many ContextSnapshots
+(often 1 per session, but you can allow multiple)
+
+8) EmotionSignal
+Stores emotion outputs (aligned with EmotionSignalStore).
+Should be minimal and privacy-safe.
+
+emotion_id (PK)
+
+session_id (FK → InteractionSession, nullable) (can be linked to a session or stored as latest signal)
+
+state (e.g., STRESSED, FOCUSED, NEUTRAL)
+
+confidence (float)
+
+timestamp
+
+Relationships
+
+InteractionSession 0..many EmotionSignals
+
+If you store only “latest”, you can still model it as many but keep retention small.
+
+9) LLMRequest
+Tracks requests sent to the remote inference server (aligned with LLMClient).
+
+llm_request_id (PK)
+
+session_id (FK → InteractionSession)
+
+request_summary (text) (not raw sensitive data)
+
+model_name (string)
+
+sent_at
+
+status (SUCCESS, TIMEOUT, AUTH_FAILED, SERVER_DOWN)
+
+Relationship
+
+InteractionSession 0..many LLMRequests
+
+10) LLMResponse
+Stores what came back from the model (aligned with Orchestrator consuming the response).
+
+llm_response_id (PK)
+
+llm_request_id (FK → LLMRequest)
+
+response_text
+
+suggested_tool (nullable)
+
+suggested_tool_args (json, nullable)
+
+received_at
+
+Relationship
+
+LLMRequest 1 → 1 LLMResponse (or 1→0..1 if failures)
+
+11) ToolExecution
+Represents tools actually executed locally (aligned with ToolExecutor).
+
+tool_exec_id (PK)
+
+session_id (FK → InteractionSession)
+
+tool_name
+
+tool_args (json)
+
+approved_by_policy (boolean)
+
+executed_at
+
+outcome (SUCCESS, FAILED, BLOCKED)
+
+result_summary (text)
+
+Relationship
+
+InteractionSession 0..many ToolExecutions
+
+12) ErrorLog
+Stores errors and failures (aligned with Logger/ErrorHandler).
+
+error_id (PK)
+
+session_id (FK → InteractionSession, nullable)
+
+component (e.g., LLMClient, EmotionEngineClient, ToolExecutor)
+
+error_type
+
+message
+
+created_at
+
+Relationship
+
+InteractionSession 0..many ErrorLogs
+
+Key Relationships Summary (Cardinality)
+User 1 → many Settings
+
+User 1 → many Hotkeys
+
+User 1 → many PermissionState
+
+User 1 → many InteractionSessions
+
+InteractionSession 1 → many Messages
+
+InteractionSession 1 → many ContextSnapshots
+
+InteractionSession 0..many → EmotionSignals
+
+InteractionSession 0..many → LLMRequests → (0..1) LLMResponse
+
+InteractionSession 0..many → ToolExecutions
+
+InteractionSession 0..many → ErrorLogs
+
+Privacy Alignment Notes (important for your ERD)
+No raw camera frames in the database (only EmotionSignal).
+
+Screen data should be stored only as a summary and only if enabled.
+
+Add retention/clear-data policy at the application layer (fits your PrivacyManager).
+
+

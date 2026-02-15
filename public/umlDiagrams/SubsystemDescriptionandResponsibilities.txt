@@ -1,0 +1,296 @@
+Client Application Subsystem
+Responsibility
+This subsystem represents everything that runs on the user’s device. It is responsible for user interaction, decision‑making, privacy enforcement, and safe execution of actions.
+
+Main responsibilities
+Provide the desktop user interface.
+
+Capture user input (voice, hotkeys, UI actions).
+
+Enforce privacy, permissions, and safety rules.
+
+Coordinate communication with AI services.
+
+Execute approved system actions locally.
+
+Key components
+Electron + React UI
+
+Node.js Policy & Orchestrator
+
+Hotkey Manager
+
+Permission Manager
+
+Privacy Manager
+
+Context Collector
+
+Tool Execution Layer
+
+Local Storage
+
+Why this subsystem is critical
+This subsystem is the authority of the system.
+Even when AI is involved, no action can happen without this subsystem approving it.
+
+2) Presentation (UI) Subsystem
+Responsibility
+Handles all user-facing interaction and feedback.
+
+Responsibilities in detail
+Display assistant dashboard and chat interface.
+
+Show system status indicators:
+
+microphone
+
+camera
+
+privacy mode
+
+AI server availability
+
+Allow users to:
+
+configure settings
+
+customize hotkeys
+
+enable/disable features
+
+Provide feedback for system states:
+
+listening
+
+processing
+
+responding
+
+errors and fallback modes
+
+Boundaries
+The UI does not make decisions.
+
+It forwards events to the Orchestrator and displays results.
+
+3) Policy & Orchestration Subsystem (Core Logic)
+Responsibility
+This is the central control subsystem and the most important part of the system.
+
+Responsibilities in detail
+Receive all triggers:
+
+user requests
+
+hotkeys
+
+proactive events
+
+Enforce deterministic rules:
+
+permission checks
+
+privacy mode enforcement
+
+cooldowns and do‑not‑disturb
+
+tool allowlisting
+
+Decide:
+
+whether to call the LLM
+
+what context can be shared
+
+whether an AI suggestion is safe
+
+Coordinate the full flow:
+Input → Policy Check → AI Reasoning (optional) → Validation → Action → Response
+
+Key design rule
+AI suggestions are never trusted blindly.
+The policy subsystem validates everything before execution.
+
+4) Voice Interaction Subsystem
+Responsibility
+Handles speech-based interaction between the user and the assistant.
+
+Responsibilities in detail
+Capture audio from the microphone.
+
+Convert speech to text (STT).
+
+Deliver spoken responses (TTS).
+
+Integrate with policy checks (e.g., microphone permission).
+
+Privacy consideration
+Voice input is processed only when explicitly triggered.
+
+Microphone usage is fully permission‑controlled.
+
+5) Context & Proactivity Subsystem
+Responsibility
+Provides situational awareness while remaining lightweight and non-intrusive.
+
+Responsibilities in detail
+Monitor:
+
+active applications
+
+idle time
+
+usage patterns
+
+Detect situations where help might be useful.
+
+Generate proactive events only when allowed by policy.
+
+Constraints
+Does not interrupt the user arbitrarily.
+
+Always respects:
+
+cooldown rules
+
+privacy mode
+
+do‑not‑disturb settings
+
+6) Emotion Detection Subsystem (Optional, Local)
+Responsibility
+Provide emotion-aware signals to improve interaction quality.
+
+Responsibilities in detail
+Run a Python-based emotion detection process locally.
+
+Read camera input only if enabled.
+
+Produce lightweight emotion signals:
+
+emotion state
+
+confidence
+
+timestamp
+
+Send signals to the orchestrator for optional use.
+
+Privacy guarantees
+No raw video is stored or transmitted.
+
+Can be instantly disabled using:
+
+privacy mode hotkey
+
+camera toggle hotkey
+
+7) AI Reasoning Subsystem (Remote LLM Server)
+Responsibility
+Provide language understanding and reasoning, not control.
+
+Responsibilities in detail
+Accept requests over HTTPS with authentication.
+
+Run inference using a locally hosted language model.
+
+Return:
+
+natural language responses
+
+optional suggested actions (structured)
+
+Apply rate limiting and authentication.
+
+Explicit limitation
+This subsystem cannot execute OS actions.
+
+It has no access to user hardware, files, or system APIs.
+
+8) Tool Execution Subsystem
+Responsibility
+Perform actual system actions safely on the client device.
+
+Responsibilities in detail
+Execute only pre-approved tools.
+
+Interface with the operating system (Windows).
+
+Return execution results to the orchestrator.
+
+Safety rules
+Tools are executed only after policy approval.
+
+If a tool fails, the system:
+
+reports safely
+
+logs the error
+
+returns to a stable state
+
+9) Data & Persistence Subsystem
+Responsibility
+Manage all locally stored data.
+
+Responsibilities in detail
+Store:
+
+user settings
+
+hotkey configurations
+
+permission states
+
+optional interaction logs
+
+Support:
+
+retention policies
+
+clear-data functionality
+
+Never store:
+
+raw camera frames
+
+raw screenshots by default
+
+10) Error Handling & Fallback Subsystem
+Responsibility
+Ensure the system never crashes or behaves unpredictably.
+
+Responsibilities in detail
+Detect failures:
+
+LLM server unreachable
+
+authentication errors
+
+tool execution failures
+
+permission revocations
+
+Switch to fallback modes:
+
+local-only responses
+
+reduced functionality
+
+Communicate issues clearly to the user.
+
+11) Subsystem Collaboration Summary
+Subsystem	Primary Role
+UI	Interaction & feedback
+Policy & Orchestrator	Decision authority
+Voice	Speech input/output
+Context & Proactivity	Situational awareness
+Emotion Engine	Optional emotion signals
+AI Reasoning Server	Language reasoning only
+Tool Execution	Local OS actions
+Data Storage	Settings & history
+Error Handling	Stability & recovery
+One-paragraph version :
+The system is divided into multiple cooperating subsystems, each with a clearly defined responsibility. The client application subsystem manages user interaction, policy enforcement, and safe execution of actions. The policy and orchestration subsystem acts as the central decision authority, ensuring privacy, permissions, and safety constraints are enforced before any AI reasoning or system action occurs. AI capabilities are provided through a remote LLM inference subsystem accessed securely over HTTPS, while optional emotion detection runs locally to preserve privacy. Supporting subsystems handle voice interaction, context monitoring, data persistence, and error handling, together forming a robust, privacy-aware, and modular desktop assistant architecture.
+__________________________________________________________________

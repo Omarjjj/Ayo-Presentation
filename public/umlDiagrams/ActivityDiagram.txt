@@ -1,0 +1,216 @@
+Swimlanes
+User | UI (Electron/React) | Orchestrator (Node) | Policy/Privacy/Permissions | Local Services (STT/TTS, Context, Emotion) | Remote LLM Server | Local Scheduler | Tool Executor (OS) | Storage/Logs
+
+0) Start / Initialization
+Start
+
+UI shows Initializing
+
+Orchestrator loads settings + hotkeys + toggles from Storage
+
+Permission Manager checks Mic / Camera / Screen/Context permissions
+
+Decision: “User Login exists?”
+
+No (your current design): skip login
+
+Yes (if you add accounts): show Login → validate → continue
+
+Decision: AI Server configured (URL + token/key)?
+
+No → UI opens Settings → user saves → continue
+
+Orchestrator pings LLM server (optional) → set Online/Offline
+
+Start background services in parallel:
+
+Proactive Monitor loop
+
+Local Scheduler loop
+
+Emotion Engine (only if camera enabled + permission granted + privacy OFF)
+
+UI shows Ready (Idle)
+
+1) Global Interrupts (can happen ANY time)
+A) Privacy Mode Toggle (highest priority)
+User presses Privacy hotkey
+
+Privacy Manager sets Privacy=ON → immediately:
+
+disable screen/context capture
+
+stop/pause emotion engine
+
+block sensitive data from being sent to LLM
+
+UI updates indicators
+
+Return to previous state (or Ready)
+
+B) Camera Toggle
+User toggles camera
+
+Decision: permission granted + privacy OFF?
+
+Yes → start/resume Emotion Engine
+
+No → keep OFF + UI warning
+
+2) Main Interaction Flow (Text or Voice)
+User triggers assistant (text / wake / push-to-talk)
+
+UI sends request to Orchestrator
+
+Decision: Voice input?
+
+Yes → STT runs → transcript returned
+
+If empty/fail → UI “try again” → Ready
+
+No → use typed text
+
+Policy pre-checks:
+
+cooldown / DND
+
+privacy mode status
+
+required permissions
+
+Context Build (minimal-by-default):
+
+always: active app + idle state
+
+optional: context summary (only if enabled + permission + privacy OFF)
+
+optional: emotion signal (only if camera ON + privacy OFF)
+
+Orchestrator sends request to LLM server (HTTPS + auth)
+
+3) LLM Response + Agent Planning
+LLM returns:
+
+response text
+
+structured plan + tool suggestions
+
+Policy Engine validates suggestions:
+
+allowlist
+
+permissions
+
+privacy constraints
+
+risk level classification
+
+Decision: outcome type
+
+Text-only (no tool / tool blocked) → UI shows + (optional) TTS → Ready
+
+Low-impact tool (safe auto) → go to Tool Execution
+
+High-impact tool (email/message/booking/purchase/account changes) → require confirmation
+
+4) Tool Execution (Client-side only)
+A) Low-impact auto execution
+Orchestrator → Tool Executor runs action (open app, focus window, notify, etc.)
+
+Decision: needs external integration?
+
+Spotify action → call Spotify API
+
+Email action → call Email API
+
+Tool returns success/failure
+
+UI shows result + optional TTS
+
+Log session result (if enabled) → Ready
+
+B) High-impact confirmation flow
+UI shows confirmation dialog (summary of what will happen)
+
+Decision: user confirms?
+
+Yes → execute tool/integration → show result
+
+No → cancel → show cancelled message
+
+Log outcome (if enabled) → Ready
+
+5) Delayed / Scheduled Actions (n8n-style)
+User requests delayed action (“in 1 minute …”)
+
+Orchestrator gets plan from LLM (includes delay + payload)
+
+Policy validates scheduling allowed
+
+Orchestrator creates job in Local Scheduler
+
+Scheduler waits asynchronously (UI stays Ready)
+
+When timer fires:
+6. Scheduler triggers Orchestrator
+7. Re-check policy + permissions again (privacy might be ON now)
+8. Decision: still allowed?
+
+Yes → execute tool/integration → UI shows “Scheduled task executed”
+
+No → cancel job safely → UI shows “Blocked by policy/privacy”
+
+Log outcome (if enabled) → Ready
+
+6) Proactive Suggestions (Background)
+Proactive Monitor detects trigger
+
+Policy checks:
+
+proactivity enabled?
+
+cooldown/DND?
+
+privacy constraints?
+
+Decision: allowed to interrupt?
+
+No → continue monitoring loop
+
+Yes → preset tip OR call LLM for suggestion
+
+UI shows toast (optional TTS)
+
+Decision: user clicks/accepts?
+
+Yes → enter Main Interaction Flow
+
+No → return to monitoring
+
+7) Failure / Edge Case Branches (must be in diagram)
+LLM server offline/timeout → fallback response + UI “offline” → Ready
+
+Auth failed → UI “unauthorized” + disable AI calls until fixed → Ready
+
+Tool execution failed → safe error message + log → Ready
+
+Permission revoked mid-run → disable feature + continue reduced mode → Ready
+
+Privacy toggled mid-flow → discard sensitive context + re-validate before executing
+
+8) Logging / Persistence (Optional but shown)
+After any interaction / scheduled job / error:
+
+Save minimal session metadata to Storage/Logs only if enabled
+
+Respect privacy mode + retention settings
+
+9) Shutdown
+User exits app
+
+Stop monitors + scheduler + emotion engine + voice services
+
+Save settings/logs
+
+End 
+

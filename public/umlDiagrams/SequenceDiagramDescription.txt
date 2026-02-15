@@ -1,0 +1,229 @@
+Lifelines / Actors
+
+User
+
+Client UI (Electron/React)
+
+Client Orchestrator (Node.js)
+
+Policy Engine (rules + allowlist)
+
+Privacy Manager (privacy mode + toggles)
+
+Permission Manager (mic/cam/screen permissions)
+
+Local Services: STT/TTS, Context Collector, Python Emotion Engine (optional)
+
+Local Scheduler (client timer/queue)
+
+Tool Executor (client OS actions)
+
+Local Storage / Logger
+
+Remote LLM Server (HTTPS + Auth)
+
+External Integrations (optional): Spotify API / Email API / Workflow hooks
+
+Scenario 0 — Startup / Initialization (first launch)
+User launches the app.
+
+UI loads dashboard → asks Orchestrator for current state.
+
+Orchestrator loads settings from Local Storage (hotkeys, toggles, server URL/key, proactivity level, cooldowns, logging).
+
+Permission Manager checks OS permissions (Mic / Camera / Screen).
+
+Orchestrator registers hotkeys via UI/Hotkey service:
+
+Privacy Mode toggle
+
+Camera toggle
+
+Push-to-talk / wake trigger
+
+Orchestrator starts background loops:
+
+Proactive Monitor (activity/idle/app changes)
+
+Health/Connectivity check (LLM server status)
+
+Decision: camera enabled + permission granted + privacy mode OFF?
+
+If yes → start Python Emotion Engine and begin streaming signals only (state/confidence/timestamp) to Orchestrator.
+
+If no → skip.
+
+UI shows status indicators: server online/offline, privacy mode, camera, context capture, listening state.
+
+Scenario 1 — Privacy Mode hotkey (global override, anytime)
+User presses Privacy Mode hotkey.
+
+Privacy Manager switches Privacy Mode ON and notifies Orchestrator + UI immediately.
+
+Orchestrator instantly:
+
+disables screen/context capture
+
+stops/pauses emotion engine
+
+blocks sending sensitive context to the LLM
+
+UI updates indicators (Privacy ON, Camera OFF, Context OFF).
+
+If toggled OFF later: Orchestrator restores features based on settings + permissions.
+
+Scenario 2 — Camera toggle hotkey (camera-only)
+User toggles camera.
+
+Orchestrator checks camera permission.
+
+If allowed and privacy mode OFF → start/resume Emotion Engine.
+
+If denied or privacy mode ON → keep it off and update UI.
+
+Scenario 3 — User interaction (text or voice)
+User triggers assistant (wake word / button / push-to-talk / text input).
+
+UI → Orchestrator: request begins.
+
+If voice:
+
+Orchestrator activates STT → receives transcript.
+
+Orchestrator → Policy/Privacy/Permissions: pre-checks (cooldown, DND, privacy mode, permissions).
+
+Orchestrator builds the context package (minimal-by-default):
+
+Always safe: active app name, idle time
+
+Optional: screen/context summary (only if enabled + permitted + privacy OFF)
+
+Optional: emotion signal (only if camera ON + privacy OFF)
+
+Orchestrator → LLM Server (HTTPS + auth): sends user input + allowed tools list + constraints + context.
+
+LLM Server → Orchestrator: returns:
+
+response text
+
+structured agent plan (intent/steps)
+
+optional tool calls (suggestions only)
+
+Scenario 4 — Agent decision: “text-only” vs “do an action”
+Orchestrator → Policy Engine: validate the plan/tool calls:
+
+allowlist check
+
+permission check
+
+privacy constraints
+
+risk level classification (low vs high impact)
+
+Decision:
+
+If no tool needed / tool blocked → continue with text-only response
+
+If tool allowed (low impact) → execute immediately
+
+If high impact (send message/email, booking, purchase, account changes) → require user confirmation
+
+Scenario 5 — Low-impact tool execution (e.g., open Spotify)
+Orchestrator → Tool Executor: run approved OS action (open app, focus window, etc.).
+
+If the action needs a reliable integration:
+
+Orchestrator → Spotify API (preferred for play/liked songs) rather than fragile UI clicking.
+
+Tool returns success/failure → Orchestrator updates UI + speaks response via TTS.
+
+Scenario 6 — High-impact action with confirmation (e.g., “book trip”, “send email”)
+Policy flags it high-impact.
+
+UI shows a confirmation dialog summarizing:
+
+who/what/when/cost/recipient/details
+
+Decision:
+
+User confirms → Orchestrator executes via Tool Executor / Integration
+
+User cancels → Orchestrator stops and responds safely
+
+Scenario 7 — Delayed action (n8n-style) using client-side scheduler
+Example: “In 1 minute, send an email”
+
+Orchestrator gets plan from LLM including delay + payload.
+
+Policy validates scheduling is allowed.
+
+Orchestrator → Local Scheduler: creates a job (run_at = now + delay, with optional latency buffer).
+
+Scheduler waits asynchronously (UI stays responsive).
+
+At trigger time: Scheduler calls Orchestrator.
+
+Orchestrator re-checks policy (permissions/privacy may have changed).
+
+If still allowed → execute action (Email API / Tool Executor).
+
+UI shows “Scheduled task executed” + result.
+
+Scenario 8 — Proactive suggestion (assistant-initiated)
+Proactive Monitor detects a trigger (idle, repeated actions, long session).
+
+Orchestrator → Policy: check proactivity enabled + cooldown + DND + privacy constraints.
+
+If allowed:
+
+Either generate a preset tip, or call LLM for a better suggestion.
+
+UI shows toast/notification; optional TTS speaks a short hint.
+
+If user interacts → continues into the normal user interaction flow.
+
+Scenario 9 — Context capture path (only if enabled)
+Orchestrator checks: context capture enabled + screen permission + privacy OFF.
+
+Context Collector produces a summary (not raw screenshots by default).
+
+Summary is included in LLM request.
+
+Scenario 10 — Failure / fallback paths
+LLM server unreachable / timeout
+
+Orchestrator marks server offline → UI indicator changes → reply with fallback (“limited mode”) and keep app running.
+
+Authentication failure
+
+UI shows “unauthorized” → disable LLM calls until key is fixed.
+
+Tool execution fails
+
+Tool returns error → Orchestrator logs → UI shows safe message + optional next step.
+
+Privacy Mode toggled mid-flow
+
+Privacy Manager interrupts → Orchestrator discards sensitive context + re-validates before any execution.
+
+Permission revoked mid-run
+
+Orchestrator disables the feature and continues in reduced mode.
+
+Scenario 11 — Logging / persistence (optional, controlled by settings)
+After each session (or error):
+
+Orchestrator writes minimal records to Local Storage/Logger:
+
+session metadata, tool execution result, errors
+
+Respect privacy mode and retention settings.
+
+Scenario 12 — Shutdown
+User exits app.
+
+Orchestrator stops monitoring loops, scheduler jobs (or persists them), voice services, emotion engine.
+
+Saves settings/logs and closes cleanly.
+

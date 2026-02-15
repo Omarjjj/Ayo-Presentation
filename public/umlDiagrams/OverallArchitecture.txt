@@ -1,0 +1,102 @@
+
+ Layered Architecture (your main “overall architecture”)
+Layer 1 — Presentation / Interaction Layer (Client)
+What it is: what the user sees and uses.
+
+Electron + React UI
+
+Dashboard (status: mic/cam/privacy/LLM online)
+
+Chat/history panel
+
+Settings (hotkeys, permissions, proactivity, logging)
+
+Buttons + hotkeys (push‑to‑talk, privacy mode, camera toggle)
+
+Shows feedback: “Listening”, “Processing”, “Server offline”, etc.
+
+Why it exists: separates user interaction from system logic so UI stays clean and changeable.
+
+Layer 2 — Application / Policy & Orchestration Layer (Client)
+What it is: the “real brain with rules” (deterministic).
+
+Node.js / Express (inside the Electron app)
+
+Receives user input (voice transcript / clicks / hotkeys)
+
+Collects context (active app, idle time, optional summaries)
+
+Enforces permissions, cooldowns, do‑not‑disturb, privacy mode
+
+Decides if LLM is needed
+
+Validates any AI suggestions
+
+Triggers local OS tools only if approved
+
+Most important rule: AI suggests → Policy decides → Tools execute.
+
+Layer 3 — AI Services Layer (Hybrid: local + remote)
+What it is: intelligence signals and reasoning services.
+
+Remote LLM Inference Server (GTX 1650)
+
+Accessed via WAN using HTTPS + authentication
+
+Returns response text + optional suggested tool/action
+
+Python Emotion Engine (Client, optional)
+
+Runs locally (camera never needs to leave the device)
+
+Outputs only small emotion signals (state/confidence/timestamp)
+
+Why it exists: keeps “AI computation” separate from OS control and privacy-sensitive inputs.
+
+Layer 4 — System Tools & Data Layer (Client)
+What it is: where actions actually happen + where data is stored.
+
+Tool execution on the client OS
+
+open apps, notifications, etc. (only after approval)
+
+Local storage
+
+settings, hotkeys
+
+optional logs/history
+
+clear-data / retention behavior
+
+Why it exists: keeps OS actions safe and local, and makes privacy controls enforceable.
+
+2) MVC (where it fits in your project)
+MVC describes how your UI code is organized (not the whole system):
+
+Model: UI state + settings (privacy mode state, camera state, cooldown values, server status)
+
+View: React pages/components (Dashboard, Settings, Chat, Indicators)
+
+Controller: event handlers + IPC calls (button click → send to Node orchestrator)
+
+So you can say:
+
+“The overall system is layered; the UI layer follows an MVC-style separation.”
+
+3) Microservices (why you should NOT label it as microservices)
+Microservices means many independently deployed services (auth, billing, logging, AI, user service…) with separate scaling and deployments.
+
+You have:
+
+One main client app
+
+One LLM inference server
+
+One optional local Python process
+
+That’s best described as:
+
+Modular client–server (not microservices)
+
+One paragraph :
+The proposed system follows a layered client–server hybrid architecture. The Presentation Layer (Electron/React) handles user interaction and settings. The Application Layer (Node.js policy/orchestrator) enforces permissions, privacy mode, cooldowns, and tool allowlisting, and coordinates all system behavior. AI capabilities are provided through an AI Services Layer, consisting of a remote LLM inference server accessed over HTTPS with authentication and an optional local Python emotion engine. System actions and data storage remain on the client device in the Tools & Data Layer. Within the UI, an MVC-style separation is used to organize state (Model), interface components (View), and event/IPC handling (Controller).

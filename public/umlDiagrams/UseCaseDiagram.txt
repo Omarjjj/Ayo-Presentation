@@ -1,0 +1,76 @@
+Actors
+End User
+
+Windows OS / System Services
+
+Remote LLM Inference Server
+
+External Integrations (Spotify API, Email API)
+
+Local Emotion Engine (Python) (optional)
+
+Local Scheduler (timer/queue — can be inside the system boundary or shown as supporting actor)
+
+System Boundary Name
+AYO Desktop AI Assistant (Client + Policy/Agent Layer)
+
+Main Use Cases to Draw
+Core interaction
+UC1: Launch Assistant
+
+UC2: Ask Assistant (Text / Voice)
+
+UC3: Receive Response (UI / TTS)
+
+AI Agent behavior
+UC4: Generate Plan (AI Reasoning)
+
+UC5: Validate Plan & Tool Calls (Policy Gate)
+
+UC6: Execute Low‑Impact Action (open app, focus window, notification, etc.)
+
+UC7: Confirm High‑Impact Action (send email/message, booking/purchase, account changes)
+
+Scheduling / automation
+UC8: Schedule Delayed Action
+
+UC9: Execute Scheduled Action (with re-check policy + permissions)
+
+Privacy / control
+UC10: Toggle Privacy Mode
+
+UC11: Toggle Camera / Emotion Engine
+
+UC12: Manage Permissions (Mic/Camera/Screen)
+
+Proactivity (optional but recommended)
+UC13: Monitor Activity (Background)
+
+UC14: Provide Proactive Suggestion
+
+Settings & reliability
+UC15: Configure AI Server (URL + Token)
+
+UC16: Fallback When Server Offline / Auth Fails
+
+UC17: View Logs / Status
+
+UC18: Clear Local Data
+
+Include / Extend Relationships (what makes it “UML-correct”)
+UC2 Ask Assistant <<include>> UC5 Validate Plan & Tool Calls
+
+UC2 Ask Assistant <<include>> UC4 Generate Plan
+
+UC6 Execute Low‑Impact Action <<extend>> UC2 Ask Assistant
+
+UC7 Confirm High‑Impact Action <<extend>> UC6 Execute Action
+
+UC8 Schedule Delayed Action <<extend>> UC2 Ask Assistant
+
+UC9 Execute Scheduled Action <<include>> UC5 Validate Plan & Tool Calls
+
+UC14 Provide Proactive Suggestion <<extend>> UC13 Monitor Activity
+
+UC16 Fallback <<extend>> UC4 Generate Plan 
+

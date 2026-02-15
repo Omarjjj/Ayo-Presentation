@@ -1,0 +1,129 @@
+
+A Deployment Diagram shows where each part of the system runs (physical machines / nodes), what software artifacts are deployed on each node, and how nodes communicate. For your project (remote access, WAN, HTTPS + authentication, no VPN), the deployment model should look like this:
+
+1) Deployment Nodes
+Node A — Client Device (User Laptop/PC)
+This is where the assistant is actually used.
+
+Deployed artifacts/components
+Electron Desktop Application
+
+React UI (dashboard, chat/history, settings, indicators)
+
+Node.js/Express Policy + Orchestrator (decision authority)
+
+Voice Subsystem
+
+Microphone input (push‑to‑talk / hotkey)
+
+STT (speech→text) component
+
+TTS (text→speech) component + speaker output
+
+Context Collection Module
+
+Active window/app detection, idle time, basic activity signals
+
+Optional screen/context summarization only if enabled
+
+Tool Execution Module (Client-side only)
+
+Executes OS actions like opening apps, showing notifications, etc.
+
+Local Storage
+
+Settings, permissions state, hotkeys
+
+Optional logs/history + clear-data/retention
+
+Optional deployed artifact (only if enabled)
+Python Emotion Detection Engine (local process)
+
+Uses camera locally
+
+Outputs only lightweight emotion signals (state/confidence/timestamp)
+
+Node B — Remote LLM Inference Server (GTX 1650 Desktop)
+This is the dedicated AI server that performs LLM inference.
+
+Deployed artifacts/components
+LLM Inference Service (Headless)
+
+Quantized model runtime
+
+Inference API endpoint
+
+Security Gate (Mandatory for WAN)
+
+HTTPS/TLS
+
+Authentication (API key/token)
+
+Rate limiting
+
+Logging/Monitoring (basic)
+
+Request logs, errors, performance indicators (optional but recommended)
+
+Important constraint: this node does not execute client OS tools and does not access camera/screen.
+
+Node C — Internet / Network (Communication Path)
+This is not a machine you deploy on, but it’s a critical connector in the diagram.
+
+Carries traffic between clients and the inference server
+
+Must be encrypted (HTTPS)
+
+2) Communication Links (Connectors)
+Link 1 — Client ↔ LLM Server
+Protocol: HTTPS
+
+Includes: Auth token/API key header
+
+Data sent:
+
+user request text
+
+minimal context summary (no raw camera video, no raw screenshots by default)
+
+allowed tools list + policy constraints
+
+Data returned:
+
+response text
+
+optional structured tool suggestion (advisory only)
+
+Link 2 — Client ↔ OS/Hardware (Local)
+Microphone, speakers, camera, display context access are local OS interactions
+
+Controlled by permissions + privacy mode
+
+3) Deployment Rules the Diagram Should Make Obvious
+A) Privacy-by-design placement
+Camera data stays on the client (emotion engine is local).
+
+Screen/context capture is client-side only and can be disabled instantly.
+
+B) Action safety boundary
+OS actions happen only on the client via the Tool Execution module.
+
+The LLM server cannot directly perform actions.
+
+C) WAN security requirement
+Because the inference server is remote without VPN:
+
+HTTPS + authentication + rate limiting are part of the deployment diagram (not optional).
+
+4) Optional “Future Deployment Extension” (if you want to show scalability)
+You can add a dotted/optional node:
+
+Cloud GPU Server (future replacement for the GTX 1650 machine)
+
+Same inference service + HTTPS/auth concept
+
+Client stays unchanged
+
+One paragraph :
+The deployment diagram consists of two primary nodes: the client device running the Electron desktop assistant (UI, policy/orchestrator, context collection, local storage, and optional local Python emotion detection) and a remote inference server hosting the LLM runtime. The client communicates with the inference server over the internet using HTTPS with authentication and rate limiting, ensuring secure remote access without VPN dependency. System actions are executed only on the client after deterministic policy validation, while the inference server remains headless and advisory, returning response text and optional suggested actions.
+

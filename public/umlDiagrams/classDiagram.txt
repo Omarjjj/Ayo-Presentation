@@ -1,0 +1,403 @@
+class diagram :
+
+Class Diagram Description
+1) High-level idea of the class diagram
+Your system is best modeled as three main groups of classes:
+
+Client App (Electron/React + Node policy/orchestrator)
+
+Local Python Emotion Engine (optional, per client)
+
+Remote LLM Inference Server (your GTX 1650 machine, accessed via HTTPS + auth)
+
+The class diagram should make one thing very clear:
+
+The LLM never directly controls the OS.
+It only returns text + suggestions.
+The Policy/Orchestrator classes on the client approve or block everything.
+
+2) Client-side classes (main system)
+A) Application shell and coordination
+AppController
+What it is: the main “entry point” class for the client app.
+Responsibilities:
+
+starts the app services on launch
+
+initializes settings, permissions, hotkeys, monitoring
+
+sets up connections to Python engine and LLM server
+
+shuts everything down cleanly
+
+Talks to: SettingsManager, PermissionManager, HotkeyManager, Orchestrator, Logger.
+
+B) Settings + local storage
+SettingsManager
+Stores and retrieves user preferences.
+Examples of settings:
+
+privacy mode hotkey
+
+camera toggle hotkey
+
+push-to-talk hotkey
+
+proactivity enabled/disabled
+
+cooldown seconds
+
+whether screen/context capture is allowed
+
+whether emotion detection is enabled
+
+Talks to: LocalStorage.
+
+LocalStorage
+A simple persistence class (file/db) that saves:
+
+settings
+
+optional logs/history
+
+device identifiers (if needed)
+
+C) Permissions + privacy controls
+PermissionManager
+Responsibilities:
+
+checks OS permissions (mic/camera/screen)
+
+exposes methods like:
+
+hasMicrophonePermission()
+
+hasCameraPermission()
+
+requestPermission(type)
+
+Used by: Orchestrator + PrivacyManager.
+
+PrivacyManager
+This is the “privacy gatekeeper”.
+Responsibilities:
+
+tracks Privacy Mode state (ON/OFF)
+
+when privacy mode turns ON:
+
+disables screen/context capture
+
+disables camera/emotion engine
+
+blocks any LLM request that includes sensitive context
+
+when privacy mode turns OFF:
+
+restores features based on settings + permissions
+
+Important relationship:
+PrivacyManager is consulted by almost every feature, because it can override them.
+
+D) Hotkeys and user input triggers
+HotkeyManager
+Handles:
+
+registering hotkeys
+
+listening for hotkey press
+
+firing events like:
+
+onPrivacyToggle()
+
+onCameraToggle()
+
+onPushToTalkStart()
+
+Talks to: PrivacyManager, Orchestrator, UI.
+
+VoiceInputController
+Represents the voice capture flow.
+Responsibilities:
+
+starts/stops listening (push-to-talk)
+
+passes audio data to STTService
+
+Talks to: STTService, Orchestrator.
+
+E) Voice services
+STTService (Speech-to-Text)
+Responsibilities:
+
+convert audio → text
+
+returns transcript + confidence
+
+Used by: Orchestrator.
+
+TTSService (Text-to-Speech)
+Responsibilities:
+
+convert response text → speech audio
+
+play audio through speakers
+
+Used by: Orchestrator + UI.
+
+F) Context and monitoring
+ContextCollector
+Collects “cheap” context signals like:
+
+active window/app name
+
+idle time
+
+basic system activity metrics
+
+Used by: Orchestrator + ProactiveMonitor.
+
+ProactiveMonitor
+Runs in the background.
+Responsibilities:
+
+monitors signals from ContextCollector
+
+maintains thresholds/cooldowns
+
+decides when it’s worth suggesting help (not forcing help)
+
+triggers “proactive event” to Orchestrator only if allowed
+
+Talks to: PolicyEngine, PrivacyManager, Orchestrator.
+
+G) Deterministic decision layer (the most important part)
+PolicyEngine
+This is your “rules brain” (deterministic).
+Responsibilities:
+
+decides if assistant is allowed to speak
+
+checks:
+
+do-not-disturb rules
+
+cooldown rules
+
+privacy mode
+
+permissions
+
+tool allowlist
+
+blocks unsafe or disallowed actions
+
+Used by: Orchestrator before any action.
+
+Orchestrator
+This is the main coordinator for “Detect → Decide → Speak → Act”.
+Responsibilities:
+
+receives user requests (from UI/voice)
+
+receives proactive triggers (from ProactiveMonitor)
+
+builds the LLM request package
+
+calls LLMClient
+
+receives LLM response
+
+runs PolicyEngine validation again
+
+executes tools through ToolExecutor
+
+produces final response text → UI + TTS
+
+Talks to: PolicyEngine, LLMClient, ToolExecutor, ContextCollector, EmotionSignalStore, Logger, UI.
+
+H) Tools and OS actions
+ToolRegistry
+A list of allowed tools (whitelist).
+Example tools:
+
+open application
+
+show notification
+
+search locally (if you support it)
+
+Used by: Orchestrator + PolicyEngine.
+
+ToolExecutor
+Executes tools locally.
+Responsibilities:
+
+run a tool safely
+
+return success/failure + results
+
+never runs anything not in ToolRegistry
+
+Talks to: OperatingSystemAdapter.
+
+OperatingSystemAdapter
+A wrapper class for OS-specific operations.
+Why it exists: keeps Windows-specific logic isolated.
+
+I) Emotion engine integration (optional, local)
+EmotionEngineClient
+A client-side interface to the Python process.
+Responsibilities:
+
+start/stop the python process
+
+receive emotion updates via IPC
+
+handle “pause” when privacy mode is ON
+
+Talks to: PrivacyManager, EmotionSignalStore.
+
+EmotionSignalStore
+Stores only the latest smoothed emotion state:
+
+emotion label (e.g., focused/stressed)
+
+confidence
+
+timestamp
+
+Used by: Orchestrator + ProactiveMonitor.
+
+J) Remote LLM connectivity
+LLMClient
+This represents the network call to your inference server.
+Responsibilities:
+
+sends HTTPS request to server
+
+attaches authentication header (API key/token)
+
+handles timeouts/retries
+
+parses response into a structured object
+
+Talks to: AuthManager, NetworkClient.
+
+AuthManager
+Stores and applies authentication.
+Examples:
+
+API key
+
+bearer token
+
+NetworkClient
+Low-level HTTP client wrapper.
+
+K) Logging and errors
+Logger
+Writes:
+
+debug logs
+
+error logs
+
+optional user interaction logs (if enabled)
+
+ErrorHandler
+Converts failures into safe UI messages.
+Examples:
+
+“LLM server unreachable”
+
+“Permission denied”
+
+“Tool execution failed”
+
+3) Remote LLM server-side classes (GTX 1650 machine)
+InferenceServer
+The web service that receives client requests.
+Responsibilities:
+
+exposes HTTPS endpoint
+
+validates authentication
+
+rate limits requests
+
+passes requests to ModelRuntime
+
+returns structured responses
+
+RequestAuthenticator
+Checks API key/token.
+
+RateLimiter
+Protects the server from overload/abuse.
+
+ModelRuntime
+Wrapper around the inference engine.
+Responsibilities:
+
+loads quantized model
+
+runs inference
+
+returns text + tool suggestion format
+
+PromptBuilder
+Builds the final prompt from:
+
+user text
+
+context summary
+
+tool allowlist
+
+policy constraints
+
+4) Key relationships to show in the class diagram
+Strong “ownership” (composition)
+AppController owns SettingsManager, HotkeyManager, Orchestrator (they live and die with the app)
+
+Orchestrator owns ToolExecutor and uses ToolRegistry
+
+EmotionEngineClient is “owned” by the client app and is stopped on shutdown
+
+Associations / dependencies
+Orchestrator → PolicyEngine (always checks rules)
+
+Orchestrator → LLMClient (only when reasoning is needed)
+
+Orchestrator → ContextCollector (builds context package)
+
+PrivacyManager influences:
+
+EmotionEngineClient
+
+Context capture
+
+what can be sent to LLM
+
+Clear boundaries (important for grading)
+LLM server classes never connect to OS tools
+
+OS tools are only executed by ToolExecutor on the client
+
+5) “All scenarios” mapping (how classes participate)
+Startup: AppController → SettingsManager/PermissionManager/HotkeyManager → (optional) EmotionEngineClient
+
+Privacy hotkey: HotkeyManager → PrivacyManager → (stop EmotionEngineClient + block screen capture)
+
+User voice request: VoiceInputController → STTService → Orchestrator → PolicyEngine → LLMClient → PolicyEngine → ToolExecutor → TTSService + UI
+
+Proactive suggestion: ProactiveMonitor → PolicyEngine → Orchestrator → (maybe LLMClient) → UI/TTS
+
+LLM server down: LLMClient fails → ErrorHandler → fallback response
+
+Shutdown: AppController stops ProactiveMonitor, EmotionEngineClient, saves settings/logs
+
+
+
