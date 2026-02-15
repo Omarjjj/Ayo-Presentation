@@ -14,7 +14,6 @@ import {
   Wifi,
   Clock
 } from 'lucide-react'
-import Card from '../components/ui/Card'
 import Toggle from '../components/ui/Toggle'
 import Button from '../components/ui/Button'
 import { useStore } from '../store/useStore'

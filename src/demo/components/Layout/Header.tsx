@@ -1,5 +1,11 @@
 import { motion } from 'framer-motion'
-import { Minus, Square, X, Circle } from 'lucide-react'
+import { Minus, Square, X } from 'lucide-react'
+
+declare global {
+  interface Window {
+    electronAPI?: { minimizeWindow: () => void; maximizeWindow: () => void; closeWindow: () => void }
+  }
+}
 import { useStore } from '../../store/useStore'
 import { cn } from '../../lib/utils'
 

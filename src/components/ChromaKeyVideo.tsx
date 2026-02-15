@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 interface ChromaKeyVideoProps {
   src: string;
@@ -23,7 +23,7 @@ const ChromaKeyVideo: React.FC<ChromaKeyVideoProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const video = videoRef.current;

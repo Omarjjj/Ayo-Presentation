@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FadeIn } from '../../TextReveal';
-import { User, Settings, Keyboard, Shield, MessageSquare, Eye, Brain, Server, Wrench, AlertTriangle, Database, Clock, Image } from 'lucide-react';
+import { User, Settings, Keyboard, Shield, MessageSquare, Eye, Brain, Server, Wrench, AlertTriangle, Image } from 'lucide-react';
 import DiagramModal from '../../DiagramModal';
 
 interface Entity {

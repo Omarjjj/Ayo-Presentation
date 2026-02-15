@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import DemoApp from '../../demo/App';
-import { FadeIn } from '../TextReveal';
 
 const DemoSlide = ({ animate }: { animate: boolean }) => {
   return (

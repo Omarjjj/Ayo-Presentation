@@ -36,25 +36,30 @@ export default function Button({
   }
 
   return (
-    <motion.button
+    <motion.div
       whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
       whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
-      className={cn(
-        baseStyles,
-        variants[variant],
-        sizes[size],
-        (disabled || loading) && "opacity-50 cursor-not-allowed",
-        className
-      )}
-      disabled={disabled || loading}
-      {...props}
+      className="inline-block"
     >
-      {loading ? (
-        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-      ) : icon ? (
-        <span className="flex-shrink-0">{icon}</span>
-      ) : null}
-      {children}
-    </motion.button>
+      <button
+        type="button"
+        className={cn(
+          baseStyles,
+          variants[variant],
+          sizes[size],
+          (disabled || loading) && "opacity-50 cursor-not-allowed",
+          className
+        )}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {loading ? (
+          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        ) : icon ? (
+          <span className="flex-shrink-0">{icon}</span>
+        ) : null}
+        {children}
+      </button>
+    </motion.div>
   )
 }

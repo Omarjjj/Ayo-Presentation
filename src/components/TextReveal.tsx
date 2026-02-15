@@ -205,6 +205,7 @@ interface CountUpProps {
   suffix?: string;
   prefix?: string;
   className?: string;
+  style?: React.CSSProperties;
   animate?: boolean;
 }
 
@@ -215,6 +216,7 @@ const CountUp = ({
   suffix = '',
   prefix = '',
   className = '',
+  style,
   animate = true,
 }: CountUpProps) => {
   const ref = useRef<HTMLSpanElement>(null);
@@ -236,7 +238,7 @@ const CountUp = ({
     });
   }, [animate, end, duration, delay, suffix, prefix]);
 
-  return <span ref={ref} className={className}>{prefix}0{suffix}</span>;
+  return <span ref={ref} className={className} style={style}>{prefix}0{suffix}</span>;
 };
 
 export { TextReveal, FadeIn, StaggerChildren, CountUp };

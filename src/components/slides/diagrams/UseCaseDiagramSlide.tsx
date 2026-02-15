@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FadeIn } from '../../TextReveal';
 import DiagramModal from '../../DiagramModal';
-import { User, Monitor, Server, Music, Brain, Timer, Camera, Image } from 'lucide-react';
+import { User, Monitor, Server, Music, Timer, Camera, Image } from 'lucide-react';
 
 /* ─── Actors ─── */
 const actors = [

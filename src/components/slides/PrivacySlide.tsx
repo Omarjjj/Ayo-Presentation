@@ -1,4 +1,4 @@
-import { TextReveal, FadeIn, StaggerChildren } from '../TextReveal';
+import { TextReveal, FadeIn } from '../TextReveal';
 import GlowCard from '../GlowCard';
 import { Shield, Lock, Server, Eye, KeyRound, Database } from 'lucide-react';
 

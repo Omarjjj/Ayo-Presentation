@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 interface VideoBackgroundProps {
   src: string;
@@ -17,8 +17,6 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
   useEffect(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -65,12 +63,10 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
     };
 
     const handlePlay = () => {
-      setIsPlaying(true);
       render();
     };
 
     const handleEnded = () => {
-      setIsPlaying(false);
       cancelAnimationFrame(animationFrameId);
       if (onEnded) onEnded();
     };
